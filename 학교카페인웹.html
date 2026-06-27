@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>카페인 케어 | 섭취량 분석 서비스</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0E1525;
+    --bg-soft: #15203A;
+    --card: #1B2944;
+    --card-2: #20304F;
+    --line: rgba(244,239,227,0.10);
+    --cream: #F4EFE3;
+    --ink: #E9E7DF;
+    --muted: #93A0C2;
+    --amber: #E0A23A;
+    --amber-soft: rgba(224,162,58,0.16);
+    --safe: #4FB286;
+    --safe-soft: rgba(79,178,134,0.15);
+    --caution: #E0A23A;
+    --caution-soft: rgba(224,162,58,0.15);
+    --danger: #E2554A;
+    --danger-soft: rgba(226,85,74,0.15);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: radial-gradient(ellipse at top, #16213C 0%, var(--bg) 55%);
+    color: var(--ink);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+  .num{font-family:'Space Grotesk', sans-serif;}
+  a{color:var(--amber);}
+
+  /* ---------- layout ---------- */
+  .wrap{max-width: 880px; margin: 0 auto; padding: 28px 20px 80px;}
+
+  header.top{display:flex; align-items:center; justify-content:space-between; margin-bottom: 28px; gap:12px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand .dot{
+    width:10px; height:10px; border-radius:50%;
+    background: var(--amber);
+    box-shadow: 0 0 12px 3px var(--amber-soft);
+  }
+  .brand h1{font-size:18px; margin:0; font-weight:700; letter-spacing:0.2px;}
+  .brand small{display:block; color:var(--muted); font-size:11.5px; margin-top:2px; font-weight:400;}
+
+  nav.tabs{display:flex; gap:6px; background:var(--bg-soft); padding:5px; border-radius: 999px; border:1px solid var(--line);}
+  nav.tabs button{
+    border:none; background:transparent; color:var(--muted);
+    padding:9px 18px; border-radius:999px; font-size:14px; font-weight:500;
+    cursor:pointer; font-family:inherit; transition: all .2s ease;
+  }
+  nav.tabs button.active{background:var(--amber); color:#1A1306; font-weight:700;}
+
+  .panel{display:none;}
+  .panel.active{display:block; animation: fade .35s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+  .hero{
+    border:1px solid var(--line); background: linear-gradient(135deg, var(--card), var(--bg-soft));
+    border-radius:18px; padding:26px 24px; margin-bottom:22px; position:relative; overflow:hidden;
+  }
+  .hero .eyebrow{color:var(--amber); font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; font-family:'Space Grotesk';}
+  .hero h2{margin:8px 0 8px; font-size: 21px; font-weight:700;}
+  .hero p{color:var(--muted); margin:0; font-size:14px; max-width:560px;}
+
+  .card{
+    border:1px solid var(--line); background: var(--card);
+    border-radius:16px; padding:22px; margin-bottom:18px;
+  }
+  .card .tag{
+    display:inline-block; font-family:'Space Grotesk'; font-size:11px; font-weight:700;
+    letter-spacing:1px; color:var(--amber); background:var(--amber-soft);
+    padding:3px 9px; border-radius:6px; margin-bottom:10px; text-transform:uppercase;
+  }
+  .card h3{margin:0 0 10px; font-size:16.5px; font-weight:700;}
+  .card p{color:var(--muted); font-size:13.8px; margin:0 0 6px;}
+
+  /* half-life mini chart in info card */
+  .decay-illustration{margin-top:14px; background:var(--bg-soft); border-radius:12px; padding:14px 16px 6px; border:1px solid var(--line);}
+  .decay-illustration svg{width:100%; height:auto; display:block;}
+
+  table{width:100%; border-collapse:collapse; font-size:13.5px; margin-top:6px;}
+  table th{text-align:left; color:var(--muted); font-weight:500; font-size:12px; padding:8px 6px; border-bottom:1px solid var(--line);}
+  table td{padding:9px 6px; border-bottom:1px solid var(--line);}
+  table td.mg{font-family:'Space Grotesk'; color:var(--amber); font-weight:600; text-align:right;}
+
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+  @media(max-width:640px){.grid3{grid-template-columns:1fr;}}
+  .standard{background:var(--bg-soft); border:1px solid var(--line); border-radius:12px; padding:14px;}
+  .standard .who{font-size:12.5px; color:var(--muted); margin-bottom:4px;}
+  .standard .val{font-family:'Space Grotesk'; font-size:18px; font-weight:700; color:var(--cream);}
+
+  .levelbar{display:flex; gap:4px; margin-top:14px;}
+  .levelbar div{flex:1; height:8px; border-radius:6px;}
+
+  /* ---------- analysis form ---------- */
+  .field{margin-bottom:16px;}
+  .field label{display:block; font-size:13px; color:var(--muted); margin-bottom:6px; font-weight:500;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media(max-width:560px){.row2{grid-template-columns:1fr;}}
+
+  input[type=number], input[type=time], select{
+    width:100%; background:var(--bg-soft); border:1px solid var(--line); color:var(--ink);
+    padding:11px 12px; border-radius:10px; font-size:14.5px; font-family:'Space Grotesk', sans-serif;
+    outline:none;
+  }
+  select{font-family:'Noto Sans KR';}
+  input:focus, select:focus{border-color:var(--amber); box-shadow:0 0 0 3px var(--amber-soft);}
+
+  .check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--ink); margin-top:4px;}
+  .check input{width:16px; height:16px; accent-color:var(--amber);}
+
+  .drinks{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;}
+  .drink-chip{
+    border:1px solid var(--line); background:var(--bg-soft); color:var(--ink);
+    padding:8px 12px; border-radius:10px; font-size:12.8px; cursor:pointer;
+    display:flex; align-items:center; gap:7px; font-family:'Noto Sans KR'; transition:.15s;
+  }
+  .drink-chip:hover{border-color:var(--amber); background:var(--amber-soft);}
+  .drink-chip span.mg{font-family:'Space Grotesk'; color:var(--amber); font-weight:700;}
+  .drink-chip .cnt{
+    background:var(--amber); color:#1A1306; font-weight:700; font-size:11px;
+    min-width:18px; height:18px; border-radius:50%; display:none; align-items:center; justify-content:center;
+  }
+  .drink-chip.has .cnt{display:flex;}
+
+  .totalrow{display:flex; align-items:center; justify-content:space-between; margin-top:12px; padding:10px 14px; background:var(--bg-soft); border-radius:10px; border:1px solid var(--line);}
+  .totalrow span{font-size:13px; color:var(--muted);}
+  .totalrow b{font-family:'Space Grotesk'; color:var(--amber); font-size:17px;}
+  .reset-link{font-size:12px; color:var(--muted); text-decoration:underline; cursor:pointer; background:none; border:none; font-family:inherit;}
+
+  .submit-btn{
+    width:100%; background:var(--amber); color:#1A1306; border:none; padding:15px;
+    border-radius:12px; font-size:15.5px; font-weight:700; cursor:pointer; margin-top:6px;
+    font-family:'Noto Sans KR'; transition:.15s;
+  }
+  .submit-btn:hover{filter:brightness(1.08);}
+
+  /* result */
+  #result{display:none; margin-top:24px;}
+  .result-head{display:flex; align-items:center; gap:16px; padding:22px; border-radius:16px; border:1px solid var(--line);}
+  .result-head .badge{
+    font-family:'Space Grotesk'; font-weight:700; font-size:13px; padding:7px 16px; border-radius:999px; white-space:nowrap;
+  }
+  .result-head h3{margin:0 0 4px; font-size:19px;}
+  .result-head p{margin:0; color:var(--muted); font-size:13px;}
+
+  .stat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:16px;}
+  @media(max-width:560px){.stat-grid{grid-template-columns:1fr 1fr;}}
+  .stat{background:var(--bg-soft); border:1px solid var(--line); border-radius:12px; padding:14px;}
+  .stat .lbl{font-size:11.5px; color:var(--muted);}
+  .stat .v{font-family:'Space Grotesk'; font-size:19px; font-weight:700; margin-top:4px;}
+
+  .curve-card{margin-top:18px;}
+  .curve-card svg{width:100%; height:auto; display:block;}
+  .legend{display:flex; gap:18px; font-size:12px; color:var(--muted); margin-top:10px; flex-wrap:wrap;}
+  .legend .sw{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:middle;}
+
+  .warn-box{margin-top:18px; border-radius:14px; padding:18px 20px; border:1px solid; }
+  .warn-box h4{margin:0 0 8px; font-size:14.5px; display:flex; align-items:center; gap:8px;}
+  .warn-box ul{margin:8px 0 0; padding-left:18px; font-size:13.3px; color:var(--ink);}
+  .warn-box li{margin-bottom:4px;}
+
+  footer{text-align:center; color:var(--muted); font-size:11.5px; margin-top:36px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <div class="dot"></div>
+      <div>
+        <h1>카페인 케어</h1>
+        <small>AI 기반 카페인 작용 예측 · 수면 영향 분석</small>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button class="active" data-tab="info">정보</button>
+      <button data-tab="analysis">분석</button>
+    </nav>
+  </header>
+
+  <!-- =================== 정보 탭 =================== -->
+  <section class="panel active" id="panel-info">
+
+    <div class="hero">
+      <div class="eyebrow">Why it matters</div>
+      <h2>카페인 한 잔이 잠을 갉아먹는 방식</h2>
+      <p>카페인은 마신 즉시 효과가 사라지지 않습니다. 몸속에서 천천히 절반씩 줄어들며, 그 속도와 타이밍이 그날 밤 수면의 질을 결정합니다.</p>
+    </div>
+
+    <div class="card">
+      <span class="tag">DATA 01 · 반감기</span>
+      <h3>카페인은 약 5시간마다 절반으로 줄어듭니다</h3>
+      <p>청소년·성인 기준 카페인의 반감기는 약 5시간입니다. 즉, 오후 3시에 카페인 100mg을 섭취하면 오후 8시에도 약 50mg, 새벽 1시에도 약 25mg이 몸에 남아있다는 뜻입니다.</p>
+      <div class="decay-illustration">
+        <svg viewBox="0 0 760 220" id="staticDecaySvg"></svg>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="tag">DATA 02 · 연구 결과</span>
+      <h3>헨리 포드 병원 수면연구센터 실험</h3>
+      <p>미국 디트로이트 헨리 포드 병원 수면연구센터는 취침 직전 · 3시간 전 · 6시간 전에 각각 카페인 400mg을 섭취하게 하고 수면 상태를 측정했습니다.</p>
+      <p style="color:var(--cream); font-weight:500;">결과: <b>취침 6시간 전</b>에 섭취해도 수면 시간이 1시간 이상 줄고 수면 효율이 크게 떨어졌습니다.</p>
+      <p>→ 그래서 이 서비스는 <b>취침 6시간 이내</b>의 카페인 섭취를 별도로 경고합니다.</p>
+    </div>
+
+    <div class="card">
+      <span class="tag">DATA 03 · 권고 기준</span>
+      <h3>하루 최대 카페인 권고량 (식약처 기준)</h3>
+      <div class="grid3">
+        <div class="standard"><div class="who">어린이 · 청소년</div><div class="val">체중 1kg당 2.5mg</div></div>
+        <div class="standard"><div class="who">성인</div><div class="val">400mg 이하</div></div>
+        <div class="standard"><div class="who">임산부</div><div class="val">300mg 이하</div></div>
+      </div>
+      <div class="levelbar">
+        <div style="background:var(--safe); flex-grow:5;"></div>
+        <div style="background:var(--caution); flex-grow:5;"></div>
+        <div style="background:var(--danger); flex-grow:10;"></div>
+      </div>
+      <p style="margin-top:8px; font-size:12.5px;">권고량의 <b style="color:var(--safe)">50% 미만 = 안전</b> · <b style="color:var(--caution)">50~100% = 주의</b> · <b style="color:var(--danger)">100% 초과 = 위험</b></p>
+    </div>
+
+    <div class="card">
+      <span class="tag">DATA 04 · 음료별 함량</span>
+      <h3>시중 음료 카페인 함량</h3>
+      <table>
+        <thead><tr><th>음료</th><th style="text-align:right;">카페인</th></tr></thead>
+        <tbody id="drinkTableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <span class="tag">대처 방안</span>
+      <h3>과다 섭취 시 부작용과 대처</h3>
+      <p><b style="color:var(--cream)">대표 증상</b> · 불면증, 심장 두근거림, 두통, 불안감, 빈뇨</p>
+      <p><b style="color:var(--cream)">대처 방법</b> · 물 많이 마시기, 가벼운 산책(대사 촉진), 칼륨이 풍부한 음식(바나나 등) 섭취</p>
+    </div>
+
+  </section>
+
+  <!-- =================== 분석 탭 =================== -->
+  <section class="panel" id="panel-analysis">
+
+    <div class="hero">
+      <div class="eyebrow">Risk Check</div>
+      <h2>내 카페인 섭취, 안전할까?</h2>
+      <p>나이·체중·임신 여부와 오늘 마신 카페인량을 입력하면 위험도와 권장 섭취량, 수면에 미치는 영향을 계산해 드립니다.</p>
+    </div>
+
+    <div class="card">
+      <h3>1. 기본 정보</h3>
+      <div class="row2">
+        <div class="field">
+          <label>나이 (세)</label>
+          <input type="number" id="age" placeholder="예: 18" min="1" max="100">
+        </div>
+        <div class="field">
+          <label>체중 (kg)</label>
+          <input type="number" id="weight" placeholder="예: 60" min="1" max="200">
+        </div>
+      </div>
+      <label class="check"><input type="checkbox" id="pregnant"> 현재 임신 중입니다</label>
+      <p style="font-size:11.8px; margin-top:8px;">※ 만 19세 미만은 체중 기준(1kg당 2.5mg), 19세 이상은 400mg, 임신 중이면 300mg 기준으로 계산됩니다.</p>
+    </div>
+
+    <div class="card">
+      <h3>2. 오늘 마신 카페인</h3>
+      <label style="font-size:13px; color:var(--muted); margin-bottom:6px; display:block;">음료를 눌러서 추가하세요 (여러 번 누르면 수량이 늘어납니다)</label>
+      <div class="drinks" id="drinkChips"></div>
+      <div class="totalrow">
+        <span>총 섭취량</span>
+        <div>
+          <b id="totalMgLabel">0 mg</b>
+          <button class="reset-link" id="resetDrinks" type="button" style="margin-left:14px;">초기화</button>
+        </div>
+      </div>
+      <div class="field" style="margin-top:14px;">
+        <label>직접 입력하거나 위 값을 수정할 수 있어요 (mg)</label>
+        <input type="number" id="manualMg" placeholder="예: 150" min="0">
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>3. 수면 시간 (선택)</h3>
+      <div class="row2">
+        <div class="field">
+          <label>카페인 섭취 시각</label>
+          <input type="time" id="intakeTime">
+        </div>
+        <div class="field">
+          <label>오늘 취침 예정 시각</label>
+          <input type="time" id="sleepTime">
+        </div>
+      </div>
+      <p style="font-size:11.8px;">입력하면 취침 시점까지 카페인이 얼마나 남아있는지, 6시간 이내 섭취인지 함께 알려드려요.</p>
+    </div>
+
+    <button class="submit-btn" id="analyzeBtn">분석하기</button>
+
+    <div id="result"></div>
+
+  </section>
+
+  <footer>고3 학교 과제 · 카페인 섭취가 건강(수면)에 미치는 영향 분석 및 예방 서비스</footer>
+</div>
+
+<script>
+/* ============ 데이터 ============ */
+const DRINKS = [
+  {name:"스타벅스 커피", mg:150},
+  {name:"핫식스 250ml", mg:60},
+  {name:"핫식스 355ml", mg:86},
+  {name:"핫식스 더킹 355ml", mg:100},
+  {name:"핫식스 더킹 500ml", mg:140},
+  {name:"몬스터", mg:100},
+  {name:"커피우유", mg:64},
+  {name:"코카콜라", mg:34},
+  {name:"레드불 250ml", mg:62.5},
+  {name:"레드불 355ml", mg:88.75},
+];
+const HALF_LIFE_H = 5; // 카페인 반감기(시간)
+
+/* ============ 탭 전환 ============ */
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ============ 정보 탭: 음료 표 + 정적 반감기 그래프 ============ */
+const tbody = document.getElementById('drinkTableBody');
+DRINKS.forEach(d=>{
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${d.name}</td><td class="mg">${d.mg}mg</td>`;
+  tbody.appendChild(tr);
+});
+
+function decayPath(doseStart, hours, w, h, padL, padR, padT, padB){
+  // 지수 감소 곡선의 SVG path 좌표 문자열 생성
+  const innerW = w - padL - padR, innerH = h - padT - padB;
+  const maxY = doseStart;
+  let pts = [];
+  for(let t=0;t<=hours;t+=0.25){
+    const v = doseStart * Math.pow(0.5, t/HALF_LIFE_H);
+    const x = padL + (t/hours)*innerW;
+    const y = padT + innerH - (v/maxY)*innerH;
+    pts.push([x,y]);
+  }
+  return pts;
+}
+function pointsToPath(pts){
+  return pts.map((p,i)=> (i===0?"M":"L") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+}
+
+(function drawStaticDecay(){
+  const svg = document.getElementById('staticDecaySvg');
+  const w=760,h=220, padL=36,padR=16,padT=18,padB=28;
+  const hours=20, dose=100;
+  const pts = decayPath(dose, hours, w,h,padL,padR,padT,padB);
+  let html = "";
+  // grid lines every 5h (half-life marks)
+  for(let t=0;t<=hours;t+=5){
+    const x = padL + (t/hours)*(w-padL-padR);
+    html += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${h-padB}" stroke="rgba(244,239,227,0.08)" stroke-width="1"/>`;
+    html += `<text x="${x}" y="${h-8}" font-size="10" fill="#93A0C2" font-family="Space Grotesk" text-anchor="middle">${t}h</text>`;
+  }
+  const areaPts = pts.concat([[pts[pts.length-1][0], h-padB],[pts[0][0], h-padB]]);
+  html += `<polygon points="${areaPts.map(p=>p[0]+','+p[1]).join(' ')}" fill="rgba(224,162,58,0.12)"/>`;
+  html += `<path d="${pointsToPath(pts)}" fill="none" stroke="#E0A23A" stroke-width="2.5"/>`;
+  html += `<text x="${padL}" y="14" font-size="11" fill="#93A0C2">100mg 섭취 시 잔존량 변화 (예시)</text>`;
+  svg.innerHTML = html;
+})();
+
+/* ============ 분석 탭: 음료 선택 칩 ============ */
+const chipState = {}; // name -> count
+const chipsWrap = document.getElementById('drinkChips');
+DRINKS.forEach(d=>{
+  chipState[d.name]=0;
+  const chip = document.createElement('div');
+  chip.className='drink-chip';
+  chip.innerHTML = `<span>${d.name}</span><span class="mg">${d.mg}mg</span><span class="cnt">0</span>`;
+  chip.addEventListener('click', ()=>{
+    chipState[d.name]++;
+    chip.classList.add('has');
+    chip.querySelector('.cnt').textContent = chipState[d.name];
+    syncTotalFromChips();
+  });
+  chip.addEventListener('contextmenu', (e)=>{
+    e.preventDefault();
+    if(chipState[d.name]>0){
+      chipState[d.name]--;
+      chip.querySelector('.cnt').textContent = chipState[d.name];
+      if(chipState[d.name]===0) chip.classList.remove('has');
+      syncTotalFromChips();
+    }
+  });
+  chipsWrap.appendChild(chip);
+});
+
+function chipsTotal(){
+  return DRINKS.reduce((sum,d)=> sum + d.mg*chipState[d.name], 0);
+}
+function syncTotalFromChips(){
+  const t = chipsTotal();
+  document.getElementById('manualMg').value = t>0 ? t : '';
+  document.getElementById('totalMgLabel').textContent = Math.round(t*10)/10 + " mg";
+}
+document.getElementById('manualMg').addEventListener('input', (e)=>{
+  const v = parseFloat(e.target.value)||0;
+  document.getElementById('totalMgLabel').textContent = Math.round(v*10)/10 + " mg";
+});
+document.getElementById('resetDrinks').addEventListener('click', ()=>{
+  DRINKS.forEach(d=>chipState[d.name]=0);
+  document.querySelectorAll('.drink-chip').forEach(c=>{c.classList.remove('has'); c.querySelector('.cnt').textContent='0';});
+  document.getElementById('manualMg').value='';
+  document.getElementById('totalMgLabel').textContent='0 mg';
+});
+
+/* ============ 분석 로직 ============ */
+document.getElementById('analyzeBtn').addEventListener('click', runAnalysis);
+
+function runAnalysis(){
+  const age = parseFloat(document.getElementById('age').value);
+  const weight = parseFloat(document.getElementById('weight').value);
+  const pregnant = document.getElementById('pregnant').checked;
+  const totalMg = parseFloat(document.getElementById('manualMg').value) || 0;
+  const intakeTime = document.getElementById('intakeTime').value;
+  const sleepTime = document.getElementById('sleepTime').value;
+
+  if(!age || !weight || totalMg<=0){
+    alert('나이, 체중, 카페인 섭취량을 모두 입력해주세요.');
+    return;
+  }
+
+  // 1) 권고 기준 계산
+  let maxAllowed, groupLabel;
+  if(pregnant){ maxAllowed = 300; groupLabel = "임산부 기준"; }
+  else if(age < 19){ maxAllowed = weight*2.5; groupLabel = "청소년 기준 (체중×2.5mg)"; }
+  else { maxAllowed = 400; groupLabel = "성인 기준"; }
+
+  const percent = (totalMg/maxAllowed)*100;
+  let level, levelColor, levelSoft;
+  if(percent < 50){ level="안전"; levelColor="var(--safe)"; levelSoft="var(--safe-soft)"; }
+  else if(percent <= 100){ level="주의"; levelColor="var(--caution)"; levelSoft="var(--caution-soft)"; }
+  else { level="위험"; levelColor="var(--danger)"; levelSoft="var(--danger-soft)"; }
+
+  const remaining = Math.max(maxAllowed - totalMg, 0);
+
+  // 2) 수면 영향 계산
+  let sleepHTML = "";
+  let hoursToSleep = null, residualAtSleep = null;
+  if(intakeTime && sleepTime){
+    const [ih,im] = intakeTime.split(':').map(Number);
+    const [sh,sm] = sleepTime.split(':').map(Number);
+    let diff = (sh*60+sm) - (ih*60+im);
+    if(diff < 0) diff += 24*60; // 다음날 취침으로 간주
+    hoursToSleep = diff/60;
+    residualAtSleep = totalMg * Math.pow(0.5, hoursToSleep/HALF_LIFE_H);
+  }
+
+  renderResult({level, levelColor, levelSoft, percent, totalMg, maxAllowed, remaining, groupLabel, hoursToSleep, residualAtSleep});
+}
+
+function renderResult(r){
+  const box = document.getElementById('result');
+  box.style.display='block';
+
+  let sleepWarnHTML = "";
+  if(r.hoursToSleep !== null){
+    if(r.hoursToSleep < 6){
+      sleepWarnHTML = `
+        <div class="warn-box" style="border-color:var(--danger); background:var(--danger-soft);">
+          <h4 style="color:var(--danger);">🌙 취침 ${r.hoursToSleep.toFixed(1)}시간 전 섭취 — 수면 영향 주의</h4>
+          <p style="font-size:13.3px; margin:0; color:var(--ink);">헨리 포드 병원 수면연구센터 연구에 따르면 취침 6시간 전 카페인 섭취도 수면 시간을 1시간 이상 줄이고 수면 효율을 떨어뜨립니다. 취침 시점 예상 잔존량은 약 <b>${r.residualAtSleep.toFixed(0)}mg</b>입니다.</p>
+        </div>`;
+    } else {
+      sleepWarnHTML = `
+        <div class="warn-box" style="border-color:var(--safe); background:var(--safe-soft);">
+          <h4 style="color:var(--safe);">🌙 취침 ${r.hoursToSleep.toFixed(1)}시간 전 섭취 — 권장 범위</h4>
+          <p style="font-size:13.3px; margin:0; color:var(--ink);">취침 6시간 이전 섭취로, 취침 시점 예상 잔존량은 약 <b>${r.residualAtSleep.toFixed(0)}mg</b>입니다.</p>
+        </div>`;
+    }
+  }
+
+  let dangerHTML = "";
+  if(r.level === "위험"){
+    dangerHTML = `
+      <div class="warn-box" style="border-color:var(--danger); background:var(--danger-soft); margin-top:14px;">
+        <h4 style="color:var(--danger);">⚠️ 권고량을 초과했습니다</h4>
+        <p style="margin:0 0 6px; font-size:13.3px;">다음과 같은 신체 반응이 나타날 수 있습니다.</p>
+        <ul>
+          <li>불면증, 심장 두근거림, 두통, 불안감, 빈뇨</li>
+        </ul>
+        <p style="margin:10px 0 6px; font-size:13.3px;">대처 방법</p>
+        <ul>
+          <li>물을 충분히 마시기</li>
+          <li>가벼운 산책으로 카페인 대사 촉진하기</li>
+          <li>바나나 등 칼륨이 풍부한 음식 섭취하기</li>
+        </ul>
+      </div>`;
+  }
+
+  box.innerHTML = `
+    <div class="result-head" style="background:${r.levelSoft}; border-color:${r.levelColor};">
+      <div class="badge" style="background:${r.levelColor}; color:#1A1306;">${r.level}</div>
+      <div>
+        <h3>${r.groupLabel} · ${r.percent.toFixed(0)}% 섭취</h3>
+        <p>오늘 총 ${r.totalMg.toFixed(0)}mg 섭취 / 권고량 ${r.maxAllowed.toFixed(0)}mg</p>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat"><div class="lbl">오늘 섭취량</div><div class="v" style="color:var(--cream)">${r.totalMg.toFixed(0)}mg</div></div>
+      <div class="stat"><div class="lbl">권고 상한</div><div class="v" style="color:var(--cream)">${r.maxAllowed.toFixed(0)}mg</div></div>
+      <div class="stat"><div class="lbl">오늘 더 마실 수 있는 양</div><div class="v" style="color:${r.levelColor}">${r.remaining.toFixed(0)}mg</div></div>
+    </div>
+
+    ${sleepWarnHTML}
+    ${dangerHTML}
+
+    <div class="card curve-card">
+      <h3>체내 카페인 잔존량 변화</h3>
+      <svg viewBox="0 0 760 240" id="resultDecaySvg"></svg>
+      <div class="legend">
+        <div><span class="sw" style="background:#E0A23A;"></span>잔존 카페인량</div>
+        ${r.hoursToSleep!==null ? '<div><span class="sw" style="background:#93A0C2;"></span>취침 시점</div>' : ''}
+      </div>
+    </div>
+  `;
+
+  drawResultCurve(r.totalMg, r.hoursToSleep);
+  box.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function drawResultCurve(dose, hoursToSleep){
+  const svg = document.getElementById('resultDecaySvg');
+  const w=760,h=240, padL=40,padR=20,padT=20,padB=30;
+  const hoursRange = Math.max(16, hoursToSleep ? hoursToSleep+4 : 16);
+  const pts = decayPath(dose, hoursRange, w,h,padL,padR,padT,padB);
+
+  let html = "";
+  for(let t=0;t<=hoursRange;t+=Math.max(2,Math.round(hoursRange/8))){
+    const x = padL + (t/hoursRange)*(w-padL-padR);
+    html += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${h-padB}" stroke="rgba(244,239,227,0.08)" stroke-width="1"/>`;
+    html += `<text x="${x}" y="${h-10}" font-size="10" fill="#93A0C2" font-family="Space Grotesk" text-anchor="middle">${t}h</text>`;
+  }
+  const areaPts = pts.concat([[pts[pts.length-1][0], h-padB],[pts[0][0], h-padB]]);
+  html += `<polygon points="${areaPts.map(p=>p[0]+','+p[1]).join(' ')}" fill="rgba(224,162,58,0.14)"/>`;
+  html += `<path d="${pointsToPath(pts)}" fill="none" stroke="#E0A23A" stroke-width="2.5"/>`;
+
+  if(hoursToSleep !== null && hoursToSleep <= hoursRange){
+    const x = padL + (hoursToSleep/hoursRange)*(w-padL-padR);
+    html += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${h-padB}" stroke="#93A0C2" stroke-width="1.5" stroke-dasharray="4,4"/>`;
+    html += `<text x="${x}" y="${padT-6}" font-size="10" fill="#93A0C2" text-anchor="middle">취침</text>`;
+  }
+  svg.innerHTML = html;
+}
+</script>
+</body>
+</html>
